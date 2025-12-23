@@ -1,4 +1,5 @@
 mod migrations;
+mod projects;
 mod settings;
 
 use anyhow::Result;
@@ -6,6 +7,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
 use std::path::Path;
 use std::str::FromStr;
 
+pub use projects::{Project, ProjectsRepository};
 pub use settings::SettingsRepository;
 
 /// Database connection pool
@@ -42,5 +44,10 @@ impl Database {
     /// Get settings repository
     pub fn settings(&self) -> SettingsRepository {
         SettingsRepository::new(self.pool.clone())
+    }
+
+    /// Get projects repository
+    pub fn projects(&self) -> ProjectsRepository {
+        ProjectsRepository::new(self.pool.clone())
     }
 }

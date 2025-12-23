@@ -1,5 +1,6 @@
 use crate::server::AppState;
 use axum::{
+    extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Json},
     routing::{get, post},
@@ -16,7 +17,8 @@ pub fn create_routes(frontend_dir: Option<&str>) -> Router<Arc<AppState>> {
     let api_routes = Router::new()
         .route("/health", get(health))
         .route("/about", get(about))
-        .route("/projects/validate", post(validate_project));
+        .route("/projects/validate", post(validate_project))
+        .route("/projects/recent", get(get_recent_projects));
 
     let router = Router::new().nest("/api", api_routes);
 
@@ -68,7 +70,10 @@ enum ProjectType {
 }
 
 /// Validate that a directory contains a valid project (Xcode or Android)
-async fn validate_project(Json(request): Json<ValidateProjectRequest>) -> impl IntoResponse {
+async fn validate_project(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<ValidateProjectRequest>,
+) -> impl IntoResponse {
     let path = Path::new(&request.path);
 
     if !path.exists() {
@@ -90,10 +95,23 @@ async fn validate_project(Json(request): Json<ValidateProjectRequest>) -> impl I
     }
 
     match detect_project_type(path) {
-        Some((project_type, name)) => (
-            StatusCode::OK,
-            Json(ValidateProjectResponse::Valid { project_type, name }),
-        ),
+        Some((project_type, name)) => {
+            // Save to recent projects
+            let type_str = match project_type {
+                ProjectType::Xcode => "xcode",
+                ProjectType::Android => "android",
+            };
+            let _ = state
+                .db
+                .projects()
+                .upsert(&request.path, &name, type_str)
+                .await;
+
+            (
+                StatusCode::OK,
+                Json(ValidateProjectResponse::Valid { project_type, name }),
+            )
+        }
         None => (
             StatusCode::BAD_REQUEST,
             Json(ValidateProjectResponse::Invalid {
@@ -135,6 +153,64 @@ fn detect_project_type(path: &Path) -> Option<(ProjectType, String)> {
     }
 
     None
+}
+
+#[derive(Debug, Deserialize)]
+struct RecentProjectsQuery {
+    #[serde(default)]
+    query: Option<String>,
+    #[serde(default = "default_limit")]
+    limit: i64,
+}
+
+fn default_limit() -> i64 {
+    10
+}
+
+#[derive(Debug, Serialize)]
+struct RecentProject {
+    path: String,
+    name: String,
+    #[serde(rename = "type")]
+    project_type: String,
+    valid: bool,
+}
+
+/// Get recent projects, validating each one still exists
+async fn get_recent_projects(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<RecentProjectsQuery>,
+) -> impl IntoResponse {
+    let projects = if let Some(query) = params.query {
+        state.db.projects().search(&query, params.limit).await
+    } else {
+        state.db.projects().get_recent(params.limit).await
+    };
+
+    match projects {
+        Ok(projects) => {
+            // Validate each project still exists
+            let validated: Vec<RecentProject> = projects
+                .into_iter()
+                .map(|p| {
+                    let path = Path::new(&p.path);
+                    let valid = path.exists() && detect_project_type(path).is_some();
+                    RecentProject {
+                        path: p.path,
+                        name: p.name,
+                        project_type: p.project_type,
+                        valid,
+                    }
+                })
+                .collect();
+
+            (StatusCode::OK, Json(json!({ "projects": validated })))
+        }
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to fetch projects" })),
+        ),
+    }
 }
 
 #[cfg(test)]
