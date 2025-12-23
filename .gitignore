@@ -5,6 +5,7 @@ Cargo.lock
 
 # Tauri
 /app/target/
+/app/gen/
 
 # Frontend
 node_modules/
