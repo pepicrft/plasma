@@ -60,10 +60,12 @@ pub fn run() {
 }
 
 fn get_frontend_dir(app: &AppHandle) -> Option<String> {
-    // In development, use the relative path
-    let dev_path = std::env::current_dir()
+    // In development, check relative to the executable (target/debug/app)
+    let dev_path = std::env::current_exe()
         .ok()?
-        .parent()?
+        .parent()? // target/debug
+        .parent()? // target
+        .parent()? // project root
         .join("frontend")
         .join("dist");
 
