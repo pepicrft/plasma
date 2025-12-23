@@ -17,7 +17,7 @@ use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
-#[command(name = "appwave")]
+#[command(name = "plasma")]
 #[command(about = "AI-powered app development")]
 struct Cli {
     #[command(subcommand)]
@@ -83,7 +83,7 @@ fn run_headless(port: u16, frontend_dir: Option<String>, debug: bool) {
 }
 
 async fn run_server_headless(port: u16, frontend_dir: Option<String>) -> anyhow::Result<()> {
-    info!("Starting Appwave server in headless mode...");
+    info!("Starting Plasma server in headless mode...");
 
     let mut config = Config::load().unwrap_or_default();
     config.port = port;
@@ -186,7 +186,7 @@ fn get_frontend_dir(app: &AppHandle) -> Option<String> {
 fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let open_i = MenuItem::with_id(app, "open", "Open in Browser", true, None::<&str>)?;
     let separator = MenuItem::with_id(app, "sep", "-", false, None::<&str>)?;
-    let quit_i = MenuItem::with_id(app, "quit", "Quit Appwave", true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", "Quit Plasma", true, None::<&str>)?;
 
     let menu = Menu::with_items(app, &[&open_i, &separator, &quit_i])?;
 

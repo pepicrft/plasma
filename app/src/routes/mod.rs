@@ -39,7 +39,7 @@ async fn health() -> impl IntoResponse {
 /// About endpoint with app info
 async fn about() -> impl IntoResponse {
     Json(json!({
-        "name": "appwave",
+        "name": "plasma",
         "version": env!("CARGO_PKG_VERSION"),
     }))
 }

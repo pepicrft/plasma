@@ -15,7 +15,7 @@ describe("App", () => {
   it("shows GetStarted when no project param", () => {
     renderApp(["/"])
 
-    expect(screen.getByText("Welcome to Appwave")).toBeInTheDocument()
+    expect(screen.getByText("Welcome to Plasma")).toBeInTheDocument()
     expect(screen.getByLabelText("Project path")).toBeInTheDocument()
   })
 

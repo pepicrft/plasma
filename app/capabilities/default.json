@@ -1,7 +1,7 @@
 {
   "$schema": "https://schemas.tauri.app/config/2/capability",
   "identifier": "default",
-  "description": "Default capabilities for the Appwave app",
+  "description": "Default capabilities for the Plasma app",
   "windows": ["*"],
   "permissions": [
     "core:default",

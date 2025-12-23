@@ -42,7 +42,7 @@ impl Config {
 
     /// Get the path to the config file
     pub fn config_path() -> Result<PathBuf> {
-        let proj_dirs = ProjectDirs::from("ai", "appwave", "Appwave")
+        let proj_dirs = ProjectDirs::from("dev", "plasma", "Plasma")
             .ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
 
         let config_dir = proj_dirs.config_dir();
@@ -56,13 +56,13 @@ impl Config {
         if let Some(ref path) = self.database_path {
             Ok(PathBuf::from(path))
         } else {
-            let proj_dirs = ProjectDirs::from("ai", "appwave", "Appwave")
+            let proj_dirs = ProjectDirs::from("dev", "plasma", "Plasma")
                 .ok_or_else(|| anyhow::anyhow!("Could not determine data directory"))?;
 
             let data_dir = proj_dirs.data_dir();
             fs::create_dir_all(data_dir)?;
 
-            Ok(data_dir.join("appwave.db"))
+            Ok(data_dir.join("plasma.db"))
         }
     }
 

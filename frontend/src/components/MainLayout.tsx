@@ -27,11 +27,11 @@ export function MainLayout({ projectPath }: MainLayoutProps) {
       <header className="h-12 border-b border-border flex items-center px-4 justify-between shrink-0">
         <div className="flex items-center gap-2">
           <img
-            src="/appwave-icon.svg"
-            alt="Appwave"
+            src="/plasma-icon.png"
+            alt="Plasma"
             className="w-6 h-6 rounded"
           />
-          <span className="font-semibold">Appwave</span>
+          <span className="font-semibold">Plasma</span>
           <span className="text-sm text-muted-foreground ml-2">
             {projectPath.split("/").pop()}
           </span>

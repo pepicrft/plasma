@@ -39,7 +39,7 @@ describe("GetStarted", () => {
   it("renders welcome text", () => {
     renderGetStarted()
 
-    expect(screen.getByText("Welcome to Appwave")).toBeInTheDocument()
+    expect(screen.getByText("Welcome to Plasma")).toBeInTheDocument()
     expect(
       screen.getByText(/enter the path to your .+ project to get started/i)
     ).toBeInTheDocument()

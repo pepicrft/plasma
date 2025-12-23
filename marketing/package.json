@@ -1,7 +1,7 @@
 {
-  "name": "appwave-marketing",
+  "name": "plasma-marketing",
   "version": "1.0.0",
-  "description": "Appwave marketing website",
+  "description": "Plasma marketing website",
   "scripts": {
     "dev": "eleventy --serve",
     "build": "eleventy"

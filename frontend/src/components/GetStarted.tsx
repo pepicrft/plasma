@@ -154,12 +154,12 @@ export function GetStarted() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img
-              src="/appwave-icon.png"
-              alt="Appwave"
+              src="/plasma-icon.png"
+              alt="Plasma"
               className="w-16 h-16"
             />
           </div>
-          <CardTitle className="text-2xl">Welcome to Appwave</CardTitle>
+          <CardTitle className="text-2xl">Welcome to Plasma</CardTitle>
           <CardDescription>
             Enter the path to your {projectTypes} project to get started
           </CardDescription>

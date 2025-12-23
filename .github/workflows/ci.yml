@@ -188,11 +188,11 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            artifact-name: appwave-macos
+            artifact-name: plasma-macos
           - os: ubuntu-latest
-            artifact-name: appwave-linux
+            artifact-name: plasma-linux
           - os: windows-latest
-            artifact-name: appwave-windows
+            artifact-name: plasma-windows
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
