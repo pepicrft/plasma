@@ -1,36 +1,11 @@
 use anyhow::Result;
 use sqlx::SqlitePool;
 
-/// Run all database migrations
+/// Run all database migrations using sqlx's built-in migrator.
+/// Migrations are embedded at compile time from the `migrations/` directory.
+/// Progress is tracked in the `_sqlx_migrations` table.
 pub async fn run(pool: &SqlitePool) -> Result<()> {
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        "#,
-    )
-    .execute(pool)
-    .await?;
-
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            path TEXT NOT NULL UNIQUE,
-            name TEXT NOT NULL,
-            project_type TEXT NOT NULL,
-            last_opened_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        "#,
-    )
-    .execute(pool)
-    .await?;
-
+    sqlx::migrate!("./migrations").run(pool).await?;
     Ok(())
 }
 
@@ -69,5 +44,34 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(result.0, "projects");
+
+        // Verify migrations are tracked
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM _sqlx_migrations")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(count.0, 2);
+    }
+
+    #[tokio::test]
+    async fn test_migrations_are_idempotent() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+
+        let pool = SqlitePoolOptions::new()
+            .connect(&format!("sqlite:{}?mode=rwc", db_path.display()))
+            .await
+            .unwrap();
+
+        // Run migrations twice - should not fail
+        run(&pool).await.unwrap();
+        run(&pool).await.unwrap();
+
+        // Still only 2 migrations recorded
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM _sqlx_migrations")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(count.0, 2);
     }
 }
