@@ -6,6 +6,12 @@
 
 A local-first, AI-powered tool for building iOS and Android apps.
 
+## Motivation
+
+Platform-native editors like Xcode and Android Studio are adding AI features incrementally, but they're constrained by decades of existing UI and workflows. There's an opportunity to rethink app development from scratch, where traditional IDE features and direct code manipulation become optional rather than central.
+
+Inspired by [Tidewave](https://tidewave.ai/).
+
 ## Development
 
 Install dependencies with [mise](https://mise.jdx.dev/):
