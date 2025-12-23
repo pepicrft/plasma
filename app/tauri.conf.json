@@ -4,7 +4,8 @@
   "identifier": "ai.appwave.desktop",
   "version": "0.1.0",
   "build": {
-    "frontendDist": null
+    "beforeBuildCommand": "pnpm --dir ../frontend build",
+    "frontendDist": "../frontend/dist"
   },
   "app": {
     "withGlobalTauri": true,
@@ -26,6 +27,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": {
+      "../frontend/dist": "frontend"
+    },
     "macOS": {
       "minimumSystemVersion": "10.15"
     }
