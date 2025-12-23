@@ -60,7 +60,7 @@ export function GetStarted() {
             <img
               src="/appwave-icon.png"
               alt="Appwave"
-              className="w-16 h-16 rounded-xl"
+              className="w-16 h-16"
             />
           </div>
           <CardTitle className="text-2xl">Welcome to Appwave</CardTitle>
