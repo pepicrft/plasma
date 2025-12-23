@@ -58,7 +58,7 @@ export function GetStarted() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img
-              src="/appwave-icon.svg"
+              src="/appwave-icon.png"
               alt="Appwave"
               className="w-16 h-16 rounded-xl"
             />
