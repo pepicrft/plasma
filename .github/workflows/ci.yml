@@ -29,6 +29,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - run: pnpm --dir frontend install
+      - run: pnpm --dir frontend build
+
       - run: cargo check --workspace
 
   rust-fmt:
@@ -61,6 +64,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - run: pnpm --dir frontend install
+      - run: pnpm --dir frontend build
 
       - run: cargo clippy --workspace -- -D warnings
 
@@ -124,6 +130,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - run: pnpm --dir frontend install
+      - run: pnpm --dir frontend build
 
       - run: cargo test --workspace
 
