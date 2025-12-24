@@ -41,7 +41,7 @@
       "endpoints": [
         "https://github.com/pepicrft/plasma/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNFMDFFOEVCMEJGMDY5QTgKUldTb2FmQUw2K2dCUHRCRm1jYnkvQ0FpK0lQV2VYOUR2YUlpMkxuMVpGaVNTWlRCeTlNYUVocSsK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAyNzM3N0VFRkZCQjBGNzgKUldSNEQ3di83bmR6QXYvNFZtd0wwUGpOK2JCeUFxall3bzY5ZFFhSUlTenJIR3VvdGVOMy94Tk0K",
       "windows": {
         "installMode": "passive"
       }
