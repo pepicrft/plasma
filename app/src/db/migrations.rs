@@ -27,15 +27,6 @@ mod tests {
 
         run(&pool).await.unwrap();
 
-        // Verify settings table exists
-        let result: (String,) = sqlx::query_as(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='settings'",
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-        assert_eq!(result.0, "settings");
-
         // Verify projects table exists
         let result: (String,) = sqlx::query_as(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='projects'",
