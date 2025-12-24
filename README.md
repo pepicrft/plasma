@@ -29,7 +29,7 @@ mise run dev
 Or run in headless mode (server only, no GUI):
 
 ```bash
-mise run dev:headless
+mise run dev-headless
 ```
 
 Build the frontend:
