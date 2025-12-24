@@ -1,0 +1,62 @@
+[package]
+name = "app"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Web server
+axum = { version = "0.8", features = ["ws"] }
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Database (SQLite with SeaORM)
+sea-orm = { version = "1.1", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "migrate"] }
+
+# Platform paths
+directories = "5"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Static file serving
+tower-http = { version = "0.6", features = ["fs", "cors"] }
+tower = "0.5"
+
+# Utilities
+uuid = { version = "1", features = ["v4", "serde"] }
+open = "5"
+chrono = "0.4"
+
+[dev-dependencies]
+tempfile = "3"
+
+[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
+tauri-plugin-single-instance = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-cli = "2"
+tauri-plugin-updater = "2"

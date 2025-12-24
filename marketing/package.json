@@ -1,0 +1,13 @@
+{
+  "name": "plasma-marketing",
+  "version": "1.0.0",
+  "description": "Plasma marketing website",
+  "scripts": {
+    "dev": "eleventy --serve",
+    "build": "eleventy"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0",
+    "playwright": "^1.57.0"
+  }
+}

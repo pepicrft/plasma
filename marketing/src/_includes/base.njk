@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }} - Plasma</title>
+  <meta name="description" content="{{ description or 'Build iOS and Android apps with AI agents' }}">
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <nav class="nav">
+      <a href="/" class="logo">
+          <img src="/assets/plasma-icon.png" alt="" class="logo-icon">
+          Plasma
+        </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="https://github.com/pepicrft/Plasma" class="nav-cta">GitHub</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    {{ content | safe }}
+  </main>
+
+  <footer class="footer">
+    <p>MPL-2.0 License &middot; <a href="https://github.com/pepicrft/Plasma">GitHub</a></p>
+  </footer>
+</body>
+</html>
