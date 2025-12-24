@@ -194,10 +194,10 @@ jobs:
             fi
           done
 
-          # Rename RPM files to remove version
+          # Rename RPM files to remove version (format: name-version-release.arch.rpm -> name.arch.rpm)
           for file in rpm/*.rpm; do
             if [ -f "$file" ]; then
-              newname=$(echo "$file" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+-/-/')
+              newname=$(echo "$file" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+\././')
               if [ "$file" != "$newname" ]; then
                 mv "$file" "$newname"
                 echo "Renamed: $file -> $newname"
