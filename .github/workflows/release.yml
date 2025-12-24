@@ -113,15 +113,36 @@ jobs:
         run: cargo tauri build
         working-directory: app
 
-      - name: Generate checksums
+      - name: Rename artifacts and generate checksums
         run: |
           cd target/release/bundle
-          find . -type f \( -name "*.dmg" -o -name "*.app" -o -name "*.app.tar.gz" \) -print0 | while IFS= read -r -d '' file; do
-            echo "Generating checksums for: $file"
-            shasum -a 256 "$file" > "$file.sha256"
-            shasum -a 512 "$file" > "$file.sha512"
+
+          # Rename DMG files to remove version (e.g., Plasma_0.1.0_*.dmg -> Plasma_*.dmg)
+          for file in dmg/*.dmg; do
+            if [ -f "$file" ]; then
+              newname=$(echo "$file" | sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+_/_/')
+              if [ "$file" != "$newname" ]; then
+                mv "$file" "$newname"
+                echo "Renamed: $file -> $newname"
+              fi
+            fi
           done
-          find . -type f \( -name "*.sha256" -o -name "*.sha512" \) -ls
+
+          # Generate consolidated checksums
+          rm -f sha256.txt sha512.txt
+          find . -type f \( -name "*.dmg" -o -name "*.app.tar.gz" \) | while read -r file; do
+            filename=$(basename "$file")
+            shasum -a 256 "$file" | awk -v fname="$filename" '{print $1 "  " fname}' >> sha256.txt
+            shasum -a 512 "$file" | awk -v fname="$filename" '{print $1 "  " fname}' >> sha512.txt
+            echo "Generated checksums for: $filename"
+          done
+
+          if [ -f sha256.txt ]; then
+            echo "=== sha256.txt ==="
+            cat sha256.txt
+            echo "=== sha512.txt ==="
+            cat sha512.txt
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -158,15 +179,58 @@ jobs:
         run: cargo tauri build
         working-directory: app
 
-      - name: Generate checksums
+      - name: Rename artifacts and generate checksums
         run: |
           cd target/release/bundle
-          find . -type f \( -name "*.deb" -o -name "*.AppImage" -o -name "*.rpm" \) -print0 | while IFS= read -r -d '' file; do
-            echo "Generating checksums for: $file"
-            sha256sum "$file" > "$file.sha256"
-            sha512sum "$file" > "$file.sha512"
+
+          # Rename DEB files to remove version
+          for file in deb/*.deb; do
+            if [ -f "$file" ]; then
+              newname=$(echo "$file" | sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+_/_/')
+              if [ "$file" != "$newname" ]; then
+                mv "$file" "$newname"
+                echo "Renamed: $file -> $newname"
+              fi
+            fi
           done
-          find . -type f \( -name "*.sha256" -o -name "*.sha512" \) -ls
+
+          # Rename RPM files to remove version
+          for file in rpm/*.rpm; do
+            if [ -f "$file" ]; then
+              newname=$(echo "$file" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+-/-/')
+              if [ "$file" != "$newname" ]; then
+                mv "$file" "$newname"
+                echo "Renamed: $file -> $newname"
+              fi
+            fi
+          done
+
+          # Rename AppImage files to remove version
+          for file in appimage/*.AppImage; do
+            if [ -f "$file" ]; then
+              newname=$(echo "$file" | sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+_/_/')
+              if [ "$file" != "$newname" ]; then
+                mv "$file" "$newname"
+                echo "Renamed: $file -> $newname"
+              fi
+            fi
+          done
+
+          # Generate consolidated checksums
+          rm -f sha256.txt sha512.txt
+          find . -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" \) | while read -r file; do
+            filename=$(basename "$file")
+            sha256sum "$file" | awk -v fname="$filename" '{print $1 "  " fname}' >> sha256.txt
+            sha512sum "$file" | awk -v fname="$filename" '{print $1 "  " fname}' >> sha512.txt
+            echo "Generated checksums for: $filename"
+          done
+
+          if [ -f sha256.txt ]; then
+            echo "=== sha256.txt ==="
+            cat sha256.txt
+            echo "=== sha512.txt ==="
+            cat sha512.txt
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -198,20 +262,51 @@ jobs:
         run: cargo tauri build
         working-directory: app
 
-      - name: Generate checksums
+      - name: Rename artifacts and generate checksums
         shell: pwsh
         run: |
           cd target\release\bundle
+
+          # Rename MSI files to remove version
+          Get-ChildItem -Path msi -Filter *.msi | ForEach-Object {
+            $newName = $_.Name -replace '_[0-9]+\.[0-9]+\.[0-9]+_', '_'
+            if ($_.Name -ne $newName) {
+              $newPath = Join-Path $_.Directory $newName
+              Move-Item $_.FullName $newPath
+              Write-Host "Renamed: $($_.Name) -> $newName"
+            }
+          }
+
+          # Rename NSIS exe files to remove version
+          Get-ChildItem -Path nsis -Filter *.exe | ForEach-Object {
+            $newName = $_.Name -replace '_[0-9]+\.[0-9]+\.[0-9]+_', '_'
+            if ($_.Name -ne $newName) {
+              $newPath = Join-Path $_.Directory $newName
+              Move-Item $_.FullName $newPath
+              Write-Host "Renamed: $($_.Name) -> $newName"
+            }
+          }
+
+          # Generate consolidated checksums
+          Remove-Item -Path sha256.txt -ErrorAction SilentlyContinue
+          Remove-Item -Path sha512.txt -ErrorAction SilentlyContinue
+
           Get-ChildItem -Recurse -Include *.msi,*.exe | ForEach-Object {
             $file = $_.FullName
-            Write-Host "Generating checksums for: $file"
+            $filename = $_.Name
             $hash256 = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLower()
             $hash512 = (Get-FileHash -Algorithm SHA512 $file).Hash.ToLower()
-            $relativePath = $_.Name
-            "$hash256  $relativePath" | Out-File -FilePath "$file.sha256" -Encoding ASCII
-            "$hash512  $relativePath" | Out-File -FilePath "$file.sha512" -Encoding ASCII
+            "$hash256  $filename" | Out-File -FilePath sha256.txt -Append -Encoding ASCII
+            "$hash512  $filename" | Out-File -FilePath sha512.txt -Append -Encoding ASCII
+            Write-Host "Generated checksums for: $filename"
           }
-          Get-ChildItem -Recurse -Include *.sha256,*.sha512
+
+          if (Test-Path sha256.txt) {
+            Write-Host "=== sha256.txt ==="
+            Get-Content sha256.txt
+            Write-Host "=== sha512.txt ==="
+            Get-Content sha512.txt
+          }
 
       - uses: actions/upload-artifact@v4
         with:
@@ -250,18 +345,34 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release-files
-          # Only copy distributable packages and their checksums
+
+          # Copy distributable packages
           find all-artifacts -type f \( \
             -name "*.dmg" -o \
             -name "*.deb" -o \
             -name "*.rpm" -o \
             -name "*.AppImage" -o \
             -name "*.msi" -o \
-            -name "*.exe" -o \
-            -name "*.sha256" -o \
-            -name "*.sha512" \
+            -name "*.exe" \
           \) -exec cp {} release-files/ \;
+
+          # Consolidate checksums from all platforms
+          rm -f release-files/sha256.txt release-files/sha512.txt
+
+          # Merge all sha256.txt files
+          find all-artifacts -name "sha256.txt" -exec cat {} \; > release-files/sha256.txt
+
+          # Merge all sha512.txt files
+          find all-artifacts -name "sha512.txt" -exec cat {} \; > release-files/sha512.txt
+
+          echo "=== Release files ==="
           ls -lah release-files/
+          echo ""
+          echo "=== Consolidated sha256.txt ==="
+          cat release-files/sha256.txt
+          echo ""
+          echo "=== Consolidated sha512.txt ==="
+          cat release-files/sha512.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
