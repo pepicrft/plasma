@@ -344,6 +344,8 @@ jobs:
         run: |
           # Generate changelog for the upcoming version
           git-cliff --strip all --unreleased --tag $NEXT_VERSION > /tmp/release-notes.txt
+          # Remove the version header line
+          sed -i '1d' /tmp/release-notes.txt
           cat /tmp/release-notes.txt
 
       - name: Download all artifacts
