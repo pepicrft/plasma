@@ -1,9 +1,6 @@
 {
   "private": true,
-  "scripts": {
-    "dev": "concurrently -n backend,frontend -c blue,green \"cargo run -p app -- serve\" \"pnpm --dir frontend dev\"",
-    "build": "pnpm --dir frontend build"
-  },
+  "scripts": {},
   "devDependencies": {
     "concurrently": "^9.1.0"
   },
