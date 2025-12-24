@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Build the frontend"
+set -e
+
+pnpm --dir frontend build

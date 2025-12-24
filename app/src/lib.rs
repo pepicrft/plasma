@@ -7,8 +7,8 @@ use db::Database;
 use server::ServerHandle;
 use std::sync::Mutex;
 use tauri::{
-    menu::{Menu, MenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::TrayIconBuilder,
     AppHandle, Manager, RunEvent,
 };
 use tracing::{error, info};
@@ -112,43 +112,69 @@ async fn run_server_headless(port: u16, frontend_dir: Option<String>) -> anyhow:
 fn run_desktop(debug: bool) {
     setup_logging(debug);
 
-    let app = tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_cli::init())
-        .setup(|app| {
-            // Determine frontend directory
-            let frontend_dir = get_frontend_dir(app.handle());
-            info!("Frontend directory: {:?}", frontend_dir);
-
-            // Initialize app state
-            app.manage(AppState {
-                server_handle: Mutex::new(None),
-                port: Mutex::new(4000),
-                frontend_dir: Mutex::new(frontend_dir),
-            });
-
-            // Setup system tray
-            setup_tray(app.handle())?;
-
-            // Start the server
-            let handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                if let Err(e) = start_server(&handle).await {
-                    error!("Failed to start server: {}", e);
+    // Set macOS activation policy to hide from dock
+    #[cfg(target_os = "macos")]
+    {
+        use tauri::ActivationPolicy;
+        tauri::Builder::default()
+            .plugin(tauri_plugin_opener::init())
+            .plugin(tauri_plugin_dialog::init())
+            .plugin(tauri_plugin_cli::init())
+            .setup(|app| {
+                app.set_activation_policy(ActivationPolicy::Accessory);
+                setup_app(app)
+            })
+            .build(tauri::generate_context!())
+            .expect("error while building tauri application")
+            .run(|_app_handle, event| {
+                if let RunEvent::ExitRequested { .. } = event {
+                    info!("Application exit requested");
                 }
             });
+        return;
+    }
 
-            Ok(())
-        })
-        .build(tauri::generate_context!())
-        .expect("error while building tauri application");
+    #[cfg(not(target_os = "macos"))]
+    {
+        tauri::Builder::default()
+            .plugin(tauri_plugin_opener::init())
+            .plugin(tauri_plugin_dialog::init())
+            .plugin(tauri_plugin_cli::init())
+            .setup(setup_app)
+            .build(tauri::generate_context!())
+            .expect("error while building tauri application")
+            .run(|_app_handle, event| {
+                if let RunEvent::ExitRequested { .. } = event {
+                    info!("Application exit requested");
+                }
+            });
+    }
+}
 
-    app.run(|_app_handle, event| {
-        if let RunEvent::ExitRequested { .. } = event {
-            info!("Application exit requested");
+fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    // Determine frontend directory
+    let frontend_dir = get_frontend_dir(app.handle());
+    info!("Frontend directory: {:?}", frontend_dir);
+
+    // Initialize app state
+    app.manage(AppState {
+        server_handle: Mutex::new(None),
+        port: Mutex::new(4000),
+        frontend_dir: Mutex::new(frontend_dir),
+    });
+
+    // Setup system tray
+    setup_tray(app.handle())?;
+
+    // Start the server
+    let handle = app.handle().clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = start_server(&handle).await {
+            error!("Failed to start server: {}", e);
         }
     });
+
+    Ok(())
 }
 
 fn get_frontend_dir(app: &AppHandle) -> Option<String> {
@@ -177,7 +203,7 @@ fn get_frontend_dir(app: &AppHandle) -> Option<String> {
 
 fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let open_i = MenuItem::with_id(app, "open", "Open in Browser", true, None::<&str>)?;
-    let separator = MenuItem::with_id(app, "sep", "-", false, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
     let quit_i = MenuItem::with_id(app, "quit", "Quit Plasma", true, None::<&str>)?;
 
     let menu = Menu::with_items(app, &[&open_i, &separator, &quit_i])?;
@@ -185,7 +211,7 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let _tray = TrayIconBuilder::new()
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
-        .show_menu_on_left_click(false)
+        .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => {
                 open_in_browser(app);
@@ -196,16 +222,6 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 app.exit(0);
             }
             _ => {}
-        })
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
-                button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
-                ..
-            } = event
-            {
-                open_in_browser(tray.app_handle());
-            }
         })
         .build(app)?;
 

@@ -20,16 +20,22 @@ Install dependencies with [mise](https://mise.jdx.dev/):
 mise install
 ```
 
-Run the desktop app:
+Run the desktop app with GUI and tray icon:
 
 ```bash
-cd app && cargo tauri dev
+mise run dev
 ```
 
-Run the frontend (for hot reload):
+Or run in headless mode (server only, no GUI):
 
 ```bash
-cd frontend && pnpm dev
+mise run dev --headless
+```
+
+Build the frontend:
+
+```bash
+mise run build
 ```
 
 ## License
