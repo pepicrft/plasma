@@ -14,6 +14,23 @@ use tauri::{
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
+/// Initialize logging with the given debug level
+fn setup_logging(debug: bool) {
+    let filter = if debug {
+        EnvFilter::new("debug")
+    } else {
+        EnvFilter::new("info")
+    };
+    tracing_subscriber::fmt().with_env_filter(filter).init();
+}
+
+/// Initialize the database at the default path
+async fn init_database() -> anyhow::Result<Database> {
+    let db_path = db::default_path()?;
+    info!("Database path: {}", db_path.display());
+    Database::new(&db_path).await
+}
+
 #[derive(Parser)]
 #[command(name = "plasma")]
 #[command(about = "AI-powered app development")]
@@ -62,15 +79,8 @@ pub fn run() {
 
 /// Run in headless mode (server only, no GUI)
 fn run_headless(port: u16, frontend_dir: Option<String>, debug: bool) {
-    // Setup logging
-    let filter = if debug {
-        EnvFilter::new("debug")
-    } else {
-        EnvFilter::new("info")
-    };
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    setup_logging(debug);
 
-    // Run the server
     let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
     rt.block_on(async move {
         if let Err(e) = run_server_headless(port, frontend_dir).await {
@@ -83,10 +93,7 @@ fn run_headless(port: u16, frontend_dir: Option<String>, debug: bool) {
 async fn run_server_headless(port: u16, frontend_dir: Option<String>) -> anyhow::Result<()> {
     info!("Starting Plasma server in headless mode...");
 
-    let db_path = db::default_path()?;
-    info!("Database path: {}", db_path.display());
-
-    let db = Database::new(&db_path).await?;
+    let db = init_database().await?;
     let handle = server::run_server(port, db, frontend_dir.as_deref()).await?;
 
     info!("Server running on http://localhost:{}", handle.port());
@@ -103,13 +110,7 @@ async fn run_server_headless(port: u16, frontend_dir: Option<String>) -> anyhow:
 
 /// Run in desktop mode (with system tray)
 fn run_desktop(debug: bool) {
-    // Setup logging
-    let filter = if debug {
-        EnvFilter::new("debug")
-    } else {
-        EnvFilter::new("info")
-    };
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    setup_logging(debug);
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -218,10 +219,7 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 async fn start_server(app: &AppHandle) -> anyhow::Result<()> {
     info!("Starting Plasma server...");
 
-    let db_path = db::default_path()?;
-    info!("Database path: {}", db_path.display());
-
-    let db = Database::new(&db_path).await?;
+    let db = init_database().await?;
 
     // Get frontend directory from state
     let state = app.state::<AppState>();
