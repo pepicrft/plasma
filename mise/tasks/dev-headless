@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-#MISE description="Run the server in headless mode (no GUI)"
-set -e
-
-concurrently -n backend,frontend -c blue,green \
-  "cargo run -p app -- serve" \
-  "pnpm --dir frontend dev"

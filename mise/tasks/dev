@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-#MISE description="Run the Tauri app with GUI and tray icon"
+#MISE description="Run the Tauri app (use --headless for server-only mode)"
+#MISE flag "--headless" help="Run in headless mode without GUI"
 set -e
 
-cd app && cargo tauri dev
+if [ "${MISE_TASK_FLAG_HEADLESS:-}" = "true" ]; then
+  concurrently -n backend,frontend -c blue,green \
+    "cargo run -p app -- serve" \
+    "pnpm --dir frontend dev"
+else
+  cd app && cargo tauri dev
+fi
