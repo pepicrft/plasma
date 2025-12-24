@@ -1,0 +1,248 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-releasable:
+    name: Check for releasable changes
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.check.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - name: Check for unreleased changes
+        id: check
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No previous tags found, this will be the first release"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            # Check if there are commits since the last tag
+            COMMITS_SINCE_TAG=$(git rev-list ${LATEST_TAG}..HEAD --count)
+
+            if [ "$COMMITS_SINCE_TAG" -gt 0 ]; then
+              echo "Found $COMMITS_SINCE_TAG commits since last tag"
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+            else
+              echo "No commits since last tag"
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  build-macos:
+    name: Build macOS
+    needs: check-releasable
+    if: needs.check-releasable.outputs.has_changes == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Build frontend
+        run: |
+          pnpm --dir frontend install
+          pnpm --dir frontend build
+
+      - name: Build Tauri app
+        run: cargo tauri build
+        working-directory: app
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+
+          # Find and copy macOS bundles
+          find target/release/bundle -type f \( -name "*.dmg" -o -name "*.app.tar.gz" \) -exec cp {} artifacts/ \;
+
+          # List what we found
+          ls -lah artifacts/
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          for file in *; do
+            if [ -f "$file" ]; then
+              shasum -a 256 "$file" > "$file.sha256"
+              shasum -a 512 "$file" > "$file.sha512"
+            fi
+          done
+          ls -lah
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: artifacts/
+
+  build-linux:
+    name: Build Linux
+    needs: check-releasable
+    if: needs.check-releasable.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Build frontend
+        run: |
+          pnpm --dir frontend install
+          pnpm --dir frontend build
+
+      - name: Build Tauri app
+        run: cargo tauri build
+        working-directory: app
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+
+          # Find and copy Linux bundles
+          find target/release/bundle -type f \( -name "*.deb" -o -name "*.AppImage" -o -name "*.rpm" \) -exec cp {} artifacts/ \;
+
+          # List what we found
+          ls -lah artifacts/
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          for file in *; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" > "$file.sha256"
+              sha512sum "$file" > "$file.sha512"
+            fi
+          done
+          ls -lah
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: artifacts/
+
+  build-windows:
+    name: Build Windows
+    needs: check-releasable
+    if: needs.check-releasable.outputs.has_changes == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Build frontend
+        run: |
+          pnpm --dir frontend install
+          pnpm --dir frontend build
+
+      - name: Build Tauri app
+        run: cargo tauri build
+        working-directory: app
+
+      - name: Prepare artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+
+          # Find and copy Windows bundles
+          Get-ChildItem -Path target\release\bundle -Recurse -Include *.msi,*.exe | Copy-Item -Destination artifacts\
+
+          # List what we found
+          Get-ChildItem -Path artifacts\
+
+      - name: Generate checksums
+        shell: pwsh
+        run: |
+          cd artifacts
+          Get-ChildItem -File | ForEach-Object {
+            $file = $_.Name
+            (Get-FileHash -Algorithm SHA256 $file).Hash.ToLower() + "  " + $file | Out-File -FilePath "$file.sha256" -Encoding ASCII
+            (Get-FileHash -Algorithm SHA512 $file).Hash.ToLower() + "  " + $file | Out-File -FilePath "$file.sha512" -Encoding ASCII
+          }
+          Get-ChildItem
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: artifacts/
+
+  release:
+    name: Create GitHub Release
+    needs: [check-releasable, build-macos, build-linux, build-windows]
+    if: needs.check-releasable.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - name: Generate changelog
+        run: |
+          git-cliff --strip all --latest > /tmp/release-notes.txt
+          cat /tmp/release-notes.txt
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          find all-artifacts -type f -exec cp {} release-files/ \;
+          ls -lah release-files/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: /tmp/release-notes.txt
+          files: release-files/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
