@@ -8,9 +8,12 @@ function App() {
   const [searchParams] = useSearchParams()
   const projectPath = searchParams.get("project")
 
-  // Check for updates on app startup
+  // Check for updates on app startup (only in Tauri environment)
   useEffect(() => {
-    checkForUpdates()
+    // Only run updater in Tauri environment, not in tests or browser
+    if (typeof window !== 'undefined' && '__TAURI__' in window) {
+      checkForUpdates()
+    }
   }, [])
 
   if (!projectPath) {
