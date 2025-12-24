@@ -114,7 +114,6 @@ jobs:
         working-directory: app
 
       - name: Generate checksums
-        working-directory: app
         run: |
           cd target/release/bundle
           find . -type f \( -name "*.dmg" -o -name "*.app" -o -name "*.app.tar.gz" \) -print0 | while IFS= read -r -d '' file; do
@@ -127,7 +126,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos-artifacts
-          path: app/target/release/bundle/
+          path: target/release/bundle/
 
   build-linux:
     name: Build Linux
@@ -160,7 +159,6 @@ jobs:
         working-directory: app
 
       - name: Generate checksums
-        working-directory: app
         run: |
           cd target/release/bundle
           find . -type f \( -name "*.deb" -o -name "*.AppImage" -o -name "*.rpm" \) -print0 | while IFS= read -r -d '' file; do
@@ -173,7 +171,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: linux-artifacts
-          path: app/target/release/bundle/
+          path: target/release/bundle/
 
   build-windows:
     name: Build Windows
@@ -201,7 +199,6 @@ jobs:
         working-directory: app
 
       - name: Generate checksums
-        working-directory: app
         shell: pwsh
         run: |
           cd target\release\bundle
@@ -219,7 +216,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
-          path: app/target/release/bundle/
+          path: target/release/bundle/
 
   release:
     name: Create GitHub Release
