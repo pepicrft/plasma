@@ -1,6 +1,7 @@
 pub mod db;
 pub mod routes;
 pub mod server;
+pub mod services;
 pub mod xcode;
 
 use clap::{Parser, Subcommand};
