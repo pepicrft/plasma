@@ -365,3 +365,144 @@ async fn test_real_xcode_project_discovery_from_directory() {
     let schemes = json["schemes"].as_array().unwrap();
     assert_eq!(schemes[0], "Plasma Project");
 }
+
+// Build tests with real Xcode fixture
+
+#[tokio::test]
+#[cfg(target_os = "macos")]
+async fn test_build_scheme_with_fixture() {
+    use app_lib::xcode;
+    use std::path::Path;
+
+    let project_path = fixture_path("Plasma/Plasma.xcodeproj");
+    let path = Path::new(&project_path);
+
+    // Build the fixture project
+    let result = xcode::build_scheme(path, "Plasma Project").await;
+
+    // The build should complete (may succeed or fail depending on environment)
+    assert!(result.is_ok());
+
+    let build_result = result.unwrap();
+
+    // If build succeeded, verify the build directory and products
+    if build_result.success {
+        // Verify we got a build directory
+        assert!(!build_result.build_dir.is_empty());
+        assert_eq!(
+            build_result.build_dir,
+            "/tmp/plasma-build/Build/Products/Debug-iphonesimulator"
+        );
+
+        // Should have at least one product
+        assert!(!build_result.products.is_empty());
+
+        // Find launchable products
+        let launchable = xcode::get_launchable_products(&build_result.products);
+
+        // Should have at least one launchable app
+        assert!(!launchable.is_empty());
+        assert!(launchable[0].name.ends_with(".app"));
+        assert!(launchable[0].is_launchable);
+        assert_eq!(launchable[0].product_type, xcode::ProductType::Application);
+    } else {
+        // Build failed - this is ok in test environment
+        // Just verify that build_dir is empty and no products were found
+        assert!(build_result.build_dir.is_empty());
+        assert!(build_result.products.is_empty());
+    }
+}
+
+#[tokio::test]
+#[cfg(target_os = "macos")]
+async fn test_build_scheme_stream_with_fixture() {
+    use app_lib::xcode;
+    use futures::stream::StreamExt;
+    use std::path::Path;
+
+    let project_path = fixture_path("Plasma/Plasma.xcodeproj");
+    let path = Path::new(&project_path);
+
+    // Build the fixture project with streaming
+    let stream = xcode::build_scheme_stream(path, "Plasma Project").await;
+    assert!(stream.is_ok());
+
+    let event_stream = stream.unwrap();
+    futures::pin_mut!(event_stream);
+
+    let mut events = Vec::new();
+    let mut has_started = false;
+    let mut has_completed = false;
+
+    // Collect all events from the stream
+    while let Some(result) = event_stream.next().await {
+        assert!(result.is_ok());
+        let event = result.unwrap();
+
+        match &event {
+            xcode::BuildEvent::Started { scheme, .. } => {
+                assert_eq!(scheme, "Plasma Project");
+                has_started = true;
+            }
+            xcode::BuildEvent::Output { .. } => {
+                // Build output lines
+            }
+            xcode::BuildEvent::Completed { build_dir, .. } => {
+                assert_eq!(
+                    build_dir,
+                    "/tmp/plasma-build/Build/Products/Debug-iphonesimulator"
+                );
+                has_completed = true;
+            }
+            xcode::BuildEvent::Error { .. } => {
+                // Build error
+            }
+        }
+
+        events.push(event);
+    }
+
+    // Verify we got the expected events
+    assert!(has_started, "Should have started event");
+    assert!(has_completed, "Should have completed event");
+    assert!(events.len() > 2, "Should have multiple events including output");
+}
+
+#[tokio::test]
+#[cfg(target_os = "macos")]
+async fn test_build_endpoint_with_fixture() {
+    let app = create_test_app().await;
+    let project_path = fixture_path("Plasma/Plasma.xcodeproj");
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/xcode/build")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "path": project_path,
+                        "scheme": "Plasma Project"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: Value = serde_json::from_slice(&body).unwrap();
+
+    // Verify response structure
+    assert!(json["success"].is_boolean());
+    assert!(json["build_dir"].is_string());
+    assert!(json["products"].is_array());
+    assert!(json["stdout"].is_string());
+    assert!(json["stderr"].is_string());
+}
