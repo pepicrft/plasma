@@ -17,7 +17,7 @@ pub fn create_routes(frontend_dir: Option<&str>) -> Router<Arc<AppState>> {
         .route("/about", get(health::about))
         .route("/projects/validate", post(projects::validate_project))
         .route("/projects/recent", get(projects::get_recent_projects))
-        .route("/xcode/schemes", post(xcode::get_xcode_schemes));
+        .route("/xcode/discover", post(xcode::discover_project));
 
     let router = Router::new().nest("/api", api_routes);
 

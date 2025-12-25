@@ -60,7 +60,7 @@ async fn test_xcode_schemes_endpoint_with_xcodeproj() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({
@@ -89,7 +89,7 @@ async fn test_xcode_schemes_endpoint_with_directory() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({
@@ -114,7 +114,7 @@ async fn test_xcode_schemes_endpoint_nonexistent_path() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({
@@ -149,7 +149,7 @@ async fn test_xcode_schemes_endpoint_directory_without_project() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({
@@ -188,7 +188,7 @@ async fn test_xcode_schemes_endpoint_workspace_priority() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({
@@ -229,7 +229,7 @@ async fn test_xcode_schemes_endpoint_malformed_json() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from("{invalid json}"))
                 .unwrap(),
@@ -249,7 +249,7 @@ async fn test_xcode_schemes_endpoint_missing_path_field() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(json!({}).to_string()))
                 .unwrap(),
@@ -277,7 +277,7 @@ async fn test_real_xcode_project_discovery() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({
@@ -327,7 +327,7 @@ async fn test_real_xcode_project_discovery_from_directory() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/api/xcode/schemes")
+                .uri("/api/xcode/discover")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({

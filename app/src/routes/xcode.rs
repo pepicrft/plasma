@@ -5,12 +5,12 @@ use serde_json::{json, Value};
 use std::path::Path;
 
 #[derive(Debug, Deserialize)]
-pub struct XcodeSchemesRequest {
+pub struct DiscoverProjectRequest {
     pub path: String,
 }
 
-/// Get Xcode schemes for a project or workspace
-pub async fn get_xcode_schemes(Json(request): Json<XcodeSchemesRequest>) -> impl IntoResponse {
+/// Discover Xcode project information (schemes, targets, configurations)
+pub async fn discover_project(Json(request): Json<DiscoverProjectRequest>) -> impl IntoResponse {
     let path = Path::new(&request.path);
 
     match xcode::discover_project(path).await {
