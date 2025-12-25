@@ -6,12 +6,6 @@ use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-/// Default derived data path for Plasma builds
-const DERIVED_DATA_PATH: &str = "/tmp/plasma-build";
-
-/// Default build products directory
-const BUILD_PRODUCTS_DIR: &str = "/tmp/plasma-build/Build/Products/Debug-iphonesimulator";
-
 #[derive(Debug, thiserror::Error)]
 pub enum BuildError {
     #[error("No Xcode project found at path")]
@@ -96,8 +90,7 @@ pub async fn build_scheme(project_path: &Path, scheme: &str) -> Result<BuildResu
         .arg("CODE_SIGN_IDENTITY=")
         .arg("CODE_SIGNING_REQUIRED=NO")
         .arg("CODE_SIGNING_ALLOWED=NO")
-        .arg("-derivedDataPath")
-        .arg(DERIVED_DATA_PATH);
+        .arg("-showBuildSettings");
 
     let output = cmd.output().await?;
 
@@ -114,16 +107,67 @@ pub async fn build_scheme(project_path: &Path, scheme: &str) -> Result<BuildResu
         });
     }
 
-    let build_dir = BUILD_PRODUCTS_DIR.to_string();
+    // Extract build directory from build settings
+    let build_dir = extract_build_dir_from_settings(&stdout)
+        .ok_or_else(|| BuildError::ParseError("Could not find build directory".to_string()))?;
+
+    // Now run the actual build
+    let mut build_cmd = Command::new("xcodebuild");
+
+    if is_workspace {
+        build_cmd.arg("-workspace").arg(&project.path);
+    } else {
+        build_cmd.arg("-project").arg(&project.path);
+    }
+
+    build_cmd
+        .arg("-scheme")
+        .arg(scheme)
+        .arg("-configuration")
+        .arg("Debug")
+        .arg("-sdk")
+        .arg("iphonesimulator")
+        .arg("-destination")
+        .arg("generic/platform=iOS Simulator")
+        .arg("CODE_SIGN_IDENTITY=")
+        .arg("CODE_SIGNING_REQUIRED=NO")
+        .arg("CODE_SIGNING_ALLOWED=NO");
+
+    let build_output = build_cmd.output().await?;
+    let build_stdout = String::from_utf8_lossy(&build_output.stdout).to_string();
+    let build_stderr = String::from_utf8_lossy(&build_output.stderr).to_string();
+
+    if !build_output.status.success() {
+        return Ok(BuildResult {
+            success: false,
+            build_dir: String::new(),
+            products: vec![],
+            stdout: build_stdout,
+            stderr: build_stderr,
+        });
+    }
+
     let products = find_build_products(&build_dir).await?;
 
     Ok(BuildResult {
         success: true,
         build_dir,
         products,
-        stdout,
-        stderr,
+        stdout: build_stdout,
+        stderr: build_stderr,
     })
+}
+
+/// Extract the build directory from xcodebuild -showBuildSettings output
+fn extract_build_dir_from_settings(output: &str) -> Option<String> {
+    // Look for CONFIGURATION_BUILD_DIR or BUILD_DIR
+    for line in output.lines() {
+        let trimmed = line.trim();
+        if let Some(value) = trimmed.strip_prefix("CONFIGURATION_BUILD_DIR = ") {
+            return Some(value.to_string());
+        }
+    }
+    None
 }
 
 async fn find_build_products(build_dir: &str) -> Result<Vec<BuildProduct>, BuildError> {
@@ -233,6 +277,36 @@ pub async fn build_scheme_stream(
     let scheme_owned = scheme.to_string();
     let project_path_owned = project_path.to_string_lossy().to_string();
 
+    // First, get build settings to find the build directory
+    let mut settings_cmd = Command::new("xcodebuild");
+
+    if is_workspace {
+        settings_cmd.arg("-workspace").arg(&project.path);
+    } else {
+        settings_cmd.arg("-project").arg(&project.path);
+    }
+
+    settings_cmd
+        .arg("-scheme")
+        .arg(scheme)
+        .arg("-configuration")
+        .arg("Debug")
+        .arg("-sdk")
+        .arg("iphonesimulator")
+        .arg("-destination")
+        .arg("generic/platform=iOS Simulator")
+        .arg("CODE_SIGN_IDENTITY=")
+        .arg("CODE_SIGNING_REQUIRED=NO")
+        .arg("CODE_SIGNING_ALLOWED=NO")
+        .arg("-showBuildSettings");
+
+    let settings_output = settings_cmd.output().await?;
+    let settings_stdout = String::from_utf8_lossy(&settings_output.stdout).to_string();
+
+    let build_dir = extract_build_dir_from_settings(&settings_stdout)
+        .ok_or_else(|| BuildError::ParseError("Could not find build directory".to_string()))?;
+
+    // Now start the actual build with streaming
     let mut cmd = Command::new("xcodebuild");
 
     if is_workspace {
@@ -252,8 +326,6 @@ pub async fn build_scheme_stream(
         .arg("CODE_SIGN_IDENTITY=")
         .arg("CODE_SIGNING_REQUIRED=NO")
         .arg("CODE_SIGNING_ALLOWED=NO")
-        .arg("-derivedDataPath")
-        .arg(DERIVED_DATA_PATH)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
@@ -311,7 +383,6 @@ pub async fn build_scheme_stream(
         }
 
         let status = child.wait().await;
-        let build_dir = BUILD_PRODUCTS_DIR.to_string();
 
         match status {
             Ok(exit_status) => {

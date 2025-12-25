@@ -389,10 +389,8 @@ async fn test_build_scheme_with_fixture() {
     if build_result.success {
         // Verify we got a build directory
         assert!(!build_result.build_dir.is_empty());
-        assert_eq!(
-            build_result.build_dir,
-            "/tmp/plasma-build/Build/Products/Debug-iphonesimulator"
-        );
+        // Build dir should be in DerivedData
+        assert!(build_result.build_dir.contains("DerivedData"));
 
         // Should have at least one product
         assert!(!build_result.products.is_empty());
@@ -448,10 +446,7 @@ async fn test_build_scheme_stream_with_fixture() {
                 // Build output lines
             }
             xcode::BuildEvent::Completed { build_dir, .. } => {
-                assert_eq!(
-                    build_dir,
-                    "/tmp/plasma-build/Build/Products/Debug-iphonesimulator"
-                );
+                assert!(build_dir.contains("DerivedData"));
                 has_completed = true;
             }
             xcode::BuildEvent::Error { .. } => {
