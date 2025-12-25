@@ -43,14 +43,6 @@ pub struct BuildResult {
 pub struct BuildProduct {
     pub name: String,
     pub path: String,
-    pub product_type: ProductType,
-    pub is_launchable: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum ProductType {
-    Application,
 }
 
 /// Build an Xcode scheme for iOS Simulator with code signing disabled
@@ -193,8 +185,6 @@ async fn find_build_products(build_dir: &str) -> Result<Vec<BuildProduct>, Build
         products.push(BuildProduct {
             name: file_name_str.to_string(),
             path: path_str,
-            product_type: ProductType::Application,
-            is_launchable: true,
         });
     }
 
@@ -202,12 +192,9 @@ async fn find_build_products(build_dir: &str) -> Result<Vec<BuildProduct>, Build
 }
 
 /// Get launchable products from a list of build products
+/// Since all detected products are .app files, this simply returns a clone of the input
 pub fn get_launchable_products(products: &[BuildProduct]) -> Vec<BuildProduct> {
-    products
-        .iter()
-        .filter(|p| p.is_launchable)
-        .cloned()
-        .collect()
+    products.to_vec()
 }
 
 /// Get launchable products from a build directory
@@ -396,21 +383,16 @@ mod tests {
             BuildProduct {
                 name: "MyApp.app".to_string(),
                 path: "/path/to/MyApp.app".to_string(),
-                product_type: ProductType::Application,
-                is_launchable: true,
             },
             BuildProduct {
                 name: "AnotherApp.app".to_string(),
                 path: "/path/to/AnotherApp.app".to_string(),
-                product_type: ProductType::Application,
-                is_launchable: true,
             },
         ];
 
         let launchable = get_launchable_products(&products);
         assert_eq!(launchable.len(), 2);
         assert_eq!(launchable[0].name, "MyApp.app");
-        assert_eq!(launchable[0].product_type, ProductType::Application);
     }
 
     #[test]

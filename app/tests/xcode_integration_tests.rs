@@ -401,8 +401,6 @@ async fn test_build_scheme_with_fixture() {
         // Should have at least one launchable app
         assert!(!launchable.is_empty());
         assert!(launchable[0].name.ends_with(".app"));
-        assert!(launchable[0].is_launchable);
-        assert_eq!(launchable[0].product_type, xcode::ProductType::Application);
     } else {
         // Build failed - this is ok in test environment
         // Just verify that build_dir is empty and no products were found
