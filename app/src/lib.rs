@@ -1,6 +1,8 @@
-mod db;
-mod routes;
-mod server;
+pub mod db;
+pub mod routes;
+pub mod server;
+pub mod services;
+pub mod xcode;
 
 use clap::{Parser, Subcommand};
 use db::Database;
@@ -133,7 +135,6 @@ fn run_desktop(debug: bool) {
                     info!("Application exit requested");
                 }
             });
-        return;
     }
 
     #[cfg(not(target_os = "macos"))]
