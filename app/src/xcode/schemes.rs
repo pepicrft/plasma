@@ -95,33 +95,34 @@ fn find_project_or_workspace(path: &Path) -> Result<(PathBuf, ProjectType), Stri
     let search_dir = if path.is_dir() {
         path
     } else {
-        path.parent().unwrap()
+        path.parent()
+            .ok_or_else(|| format!("Path has no parent directory: {}", path.display()))?
     };
 
-    // Prefer workspace over project
-    for entry in
-        std::fs::read_dir(search_dir).map_err(|e| format!("Failed to read directory: {}", e))?
-    {
-        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
-        let entry_path = entry.path();
+    // Read directory entries once
+    let entries: Vec<PathBuf> = std::fs::read_dir(search_dir)
+        .map_err(|e| format!("Failed to read directory: {}", e))?
+        .map(|entry_res| {
+            entry_res
+                .map(|entry| entry.path())
+                .map_err(|e| format!("Failed to read entry: {}", e))
+        })
+        .collect::<Result<_, _>>()?;
 
+    // Prefer workspace over project
+    for entry_path in &entries {
         if let Some(ext) = entry_path.extension() {
             if ext == "xcworkspace" {
-                return Ok((entry_path, ProjectType::Workspace));
+                return Ok((entry_path.clone(), ProjectType::Workspace));
             }
         }
     }
 
     // Fall back to project if no workspace found
-    for entry in
-        std::fs::read_dir(search_dir).map_err(|e| format!("Failed to read directory: {}", e))?
-    {
-        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
-        let entry_path = entry.path();
-
+    for entry_path in &entries {
         if let Some(ext) = entry_path.extension() {
             if ext == "xcodeproj" {
-                return Ok((entry_path, ProjectType::Project));
+                return Ok((entry_path.clone(), ProjectType::Project));
             }
         }
     }
