@@ -3,6 +3,34 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tokio::process::Command;
 
+#[derive(Debug, thiserror::Error)]
+pub enum DiscoveryError {
+    #[error("No Xcode project found at path")]
+    ProjectNotFound,
+
+    #[error("Not an Xcode project: {0:?}")]
+    NotXcodeProject(projects::ProjectType),
+
+    #[error("Failed to execute xcodebuild: {0}")]
+    XcodebuildExecution(#[from] std::io::Error),
+
+    #[error("xcodebuild failed: {0}")]
+    XcodebuildFailed(String),
+
+    #[error("Failed to parse xcodebuild output: {0}")]
+    ParseError(#[from] serde_json::Error),
+
+    #[error("No project/workspace info in xcodebuild output")]
+    MissingProjectInfo,
+}
+
+impl DiscoveryError {
+    /// Convert error to user-friendly string for HTTP responses
+    pub fn to_user_message(&self) -> String {
+        self.to_string()
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct XcodeProject {
     pub path: String,
@@ -36,14 +64,13 @@ struct ProjectInfo {
 }
 
 /// Discover Xcode project details including schemes, targets, and configurations
-pub async fn discover_project(path: &Path) -> Result<XcodeProject, String> {
+pub async fn discover_project(path: &Path) -> Result<XcodeProject, DiscoveryError> {
     // Use the services layer to detect the project
-    let project = projects::detect_project(path)
-        .ok_or_else(|| "No Xcode project found".to_string())?;
+    let project = projects::detect_project(path).ok_or(DiscoveryError::ProjectNotFound)?;
 
     // Ensure it's an Xcode project
     if !matches!(project.project_type, projects::ProjectType::Xcode) {
-        return Err(format!("Not an Xcode project: {:?}", project.project_type));
+        return Err(DiscoveryError::NotXcodeProject(project.project_type));
     }
 
     // Determine if it's a workspace or project based on the path extension
@@ -61,32 +88,29 @@ pub async fn discover_project(path: &Path) -> Result<XcodeProject, String> {
             .arg("-list")
             .arg("-json")
             .output()
-            .await
-            .map_err(|e| format!("Failed to execute xcodebuild: {}", e))?,
+            .await?,
         ProjectType::Project => Command::new("xcodebuild")
             .arg("-project")
             .arg(&project.path)
             .arg("-list")
             .arg("-json")
             .output()
-            .await
-            .map_err(|e| format!("Failed to execute xcodebuild: {}", e))?,
+            .await?,
     };
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("xcodebuild failed: {}", stderr));
+        return Err(DiscoveryError::XcodebuildFailed(stderr.to_string()));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let build_list: XcodeBuildList = serde_json::from_str(&stdout)
-        .map_err(|e| format!("Failed to parse xcodebuild output: {}", e))?;
+    let build_list: XcodeBuildList = serde_json::from_str(&stdout)?;
 
     let info = match project_type {
         ProjectType::Workspace => build_list.workspace,
         ProjectType::Project => build_list.project,
     }
-    .ok_or_else(|| "No project/workspace info in xcodebuild output".to_string())?;
+    .ok_or(DiscoveryError::MissingProjectInfo)?;
 
     Ok(XcodeProject {
         path: project.path,
