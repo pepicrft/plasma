@@ -1,7 +1,10 @@
-use crate::db::entity::projects::{self, ProjectType};
+use crate::db::entity::projects;
 use sea_orm::{entity::*, query::*, DatabaseConnection};
 use serde::Serialize;
 use std::path::Path;
+
+// Re-export ProjectType so other modules can access it
+pub use crate::db::entity::projects::ProjectType;
 
 #[derive(Debug, Serialize)]
 pub struct Project {

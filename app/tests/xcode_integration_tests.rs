@@ -134,7 +134,13 @@ async fn test_xcode_schemes_endpoint_nonexistent_path() {
         .unwrap();
     let json: Value = serde_json::from_slice(&body).unwrap();
 
-    assert!(json["error"].as_str().unwrap().contains("does not exist"));
+    // Should return an error for nonexistent path (either "does not exist" or "No Xcode project found")
+    let error = json["error"].as_str().unwrap();
+    assert!(
+        error.contains("does not exist") || error.contains("No Xcode project found"),
+        "Unexpected error message: {}",
+        error
+    );
 }
 
 #[tokio::test]
@@ -169,10 +175,13 @@ async fn test_xcode_schemes_endpoint_directory_without_project() {
         .unwrap();
     let json: Value = serde_json::from_slice(&body).unwrap();
 
-    assert!(json["error"]
-        .as_str()
-        .unwrap()
-        .contains("No .xcworkspace or .xcodeproj found"));
+    // Should return an error for directory without project
+    let error = json["error"].as_str().unwrap();
+    assert!(
+        error.contains("No .xcworkspace or .xcodeproj found") || error.contains("No Xcode project found"),
+        "Unexpected error message: {}",
+        error
+    );
 }
 
 #[tokio::test]

@@ -1,3 +1,3 @@
-pub mod schemes;
+pub mod discovery;
 
-pub use schemes::*;
+pub use discovery::*;
