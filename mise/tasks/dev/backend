@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Run the backend server"
+#MISE hide=true
+set -e
+
+cargo run -p app -- serve

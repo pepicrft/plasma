@@ -1,0 +1,19 @@
+[package]
+name = "plasma"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+gpui = { workspace = true }
+plasma-xcode = { path = "../xcode" }
+cocoa = "0.26"
+objc = "0.2"
+image = "0.25"
+core-graphics = "0.24"
+core-foundation = "0.10"
+core-foundation-sys = "0.8"
+ureq = "2.10"
+
+[[bin]]
+name = "plasma"
+path = "src/main.rs"

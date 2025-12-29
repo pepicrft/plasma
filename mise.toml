@@ -2,5 +2,6 @@
 rust = "latest"
 node = "22"
 pnpm = "latest"
+"ubi:pepicrft/gesttalt" = "0.3.0"
 "cargo:tauri-cli" = "latest"
 "cargo:git-cliff" = "latest"

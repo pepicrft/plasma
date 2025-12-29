@@ -1,0 +1,22 @@
+[package]
+name = "plasma-xcode"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+
+# Utilities
+once_cell = { workspace = true }

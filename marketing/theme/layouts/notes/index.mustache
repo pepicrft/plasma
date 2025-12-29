@@ -1,0 +1,22 @@
+{{> head}}
+{{> header}}
+<main class="content-container">
+    <div class="page-header">
+        <h1 class="page-title">Notes</h1>
+        <p class="page-description">Quick thoughts and snippets.</p>
+    </div>
+    {{#notes}}
+    <article>
+        <a href="/notes/{{id}}/" class="note-link">
+            <time datetime="{{date}}">{{date}}</time>
+            <div class="note-content">{{{html_content}}}</div>
+        </a>
+    </article>
+    {{/notes}}
+    {{^notes}}
+    <div class="empty-state">
+        <p>No notes yet. Check back soon!</p>
+    </div>
+    {{/notes}}
+</main>
+{{> footer}}

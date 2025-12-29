@@ -1,0 +1,5 @@
+# Site configuration
+title = "Plasma"
+description = "A local-first, AI-powered tool for building iOS and Android apps"
+base_url = "https://plasma.build"
+language = "en"

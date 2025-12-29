@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Run in headless mode without GUI"
+#MISE depends=["dev:backend", "dev:frontend"]
+#MISE wait_for=[]
+set -e

@@ -1,0 +1,23 @@
+{{> head}}
+{{> header}}
+<main class="content-container">
+    <a href="/blog/" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to blog
+    </a>
+    <article>
+        <div class="post-header">
+            <h1>{{post.frontmatter.title}}</h1>
+            <div class="post-meta">
+                <time datetime="{{post.date}}">{{post.date}}</time>
+            </div>
+        </div>
+        <div class="post-content">
+            {{{post.html_content}}}
+        </div>
+    </article>
+</main>
+{{> footer}}

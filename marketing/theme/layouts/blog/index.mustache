@@ -1,0 +1,21 @@
+{{> head}}
+{{> header}}
+<main class="content-container">
+    <div class="page-header">
+        <h1 class="page-title">Blog</h1>
+        <p class="page-description">Updates, insights, and thoughts on Plasma development.</p>
+    </div>
+    {{#posts}}
+    <article>
+        <h2><a href="/blog/{{slug}}/">{{frontmatter.title}}</a></h2>
+        <time datetime="{{date}}">{{date}}</time>
+        <p class="post-description">{{frontmatter.description}}</p>
+    </article>
+    {{/posts}}
+    {{^posts}}
+    <div class="empty-state">
+        <p>No posts yet. Check back soon!</p>
+    </div>
+    {{/posts}}
+</main>
+{{> footer}}

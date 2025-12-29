@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Run the Tauri app"
+set -e
+
+cd app && cargo tauri dev
