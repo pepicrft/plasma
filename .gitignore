@@ -6,6 +6,7 @@ Cargo.lock
 # Tauri
 /app/target/
 /app/gen/
+/app/binaries/
 
 # Frontend
 node_modules/
@@ -31,3 +32,16 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+DerivedData/
+
+# Frameworks (vendored binaries)
+app/Frameworks/
