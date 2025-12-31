@@ -4,11 +4,20 @@
   "identifier": "dev.plasma.desktop",
   "version": "0.1.0",
   "build": {
-    "beforeBuildCommand": "",
+    "beforeDevCommand": {
+      "script": "CI=true pnpm dev",
+      "cwd": "../frontend"
+    },
+    "beforeBuildCommand": {
+      "script": "pnpm build",
+      "cwd": "../frontend"
+    },
+    "devUrl": "http://localhost:5173",
     "frontendDist": "../frontend/dist"
   },
   "app": {
     "withGlobalTauri": true,
+    "windows": [],
     "security": {
       "csp": null
     },

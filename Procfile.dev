@@ -1,2 +1,0 @@
-backend: cargo run -p app -- serve
-frontend: while ! nc -z localhost 4000; do sleep 0.5; done && CI=true pnpm --dir frontend dev

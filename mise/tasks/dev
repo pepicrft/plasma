@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Run the Tauri app (use --headless for server-only mode)"
-#USAGE flag "--headless" help="Run in headless mode without GUI"
+#MISE description="Run the Tauri app in development mode"
 set -e
 
-if [ "${usage_headless:-}" = "true" ]; then
-  hivemind Procfile.dev
-else
-  cd app && cargo tauri dev
-fi
+cd app && cargo tauri dev

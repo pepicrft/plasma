@@ -4,7 +4,6 @@ node = "22"
 pnpm = "latest"
 "cargo:tauri-cli" = "latest"
 "cargo:git-cliff" = "latest"
-"ubi:DarthSim/hivemind" = "latest"
 
 [tools."github:cameroncooke/AXe"]
   version = "1.2.1"
