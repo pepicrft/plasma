@@ -50,6 +50,7 @@ static SESSION_CACHE: Lazy<SessionCache> = Lazy::new(|| Mutex::new(HashMap::new(
 
 /// Represents a persistent connection to a simulator via simulator-server
 struct SimulatorSession {
+    #[allow(dead_code)]
     udid: String,
     process: Child,
     stream_url: String,
@@ -322,82 +323,6 @@ fn find_simulator_server_binary() -> Option<PathBuf> {
                 if bundled.exists() {
                     return Some(bundled);
                 }
-            }
-        }
-    }
-
-    None
-}
-
-/// Find the plasma-stream binary (fast IOSurface-based streaming)
-fn find_plasma_stream_binary() -> Option<PathBuf> {
-    // 1. Environment variable override
-    if let Ok(path) = std::env::var("PLASMA_STREAM") {
-        let candidate = PathBuf::from(&path);
-        if candidate.exists() {
-            return Some(candidate);
-        }
-    }
-
-    // 2. Bundled binary in app/bin (for development)
-    let dev_bin = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("bin").join("plasma-stream");
-    if dev_bin.exists() {
-        return Some(dev_bin);
-    }
-
-    // 3. Bundled binary in app resources (for release builds)
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(macos_dir) = exe_path.parent() {
-            let resources_dir = macos_dir.parent().map(|p| p.join("Resources"));
-            if let Some(resources) = resources_dir {
-                let bundled = resources.join("binaries").join("plasma-stream");
-                if bundled.exists() {
-                    return Some(bundled);
-                }
-            }
-        }
-    }
-
-    None
-}
-
-/// Find the axe binary (screenshot-based streaming fallback)
-fn find_axe_binary() -> Option<PathBuf> {
-    // 1. Environment variable override
-    if let Ok(path) = std::env::var("PLASMA_AXE") {
-        let candidate = PathBuf::from(&path);
-        if candidate.exists() {
-            return Some(candidate);
-        }
-    }
-
-    // 2. Bundled binary in app resources (for release builds)
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(macos_dir) = exe_path.parent() {
-            let resources_dir = macos_dir.parent().map(|p| p.join("Resources"));
-            if let Some(resources) = resources_dir {
-                let bundled_axe = resources.join("binaries").join("axe");
-                if bundled_axe.exists() {
-                    return Some(bundled_axe);
-                }
-            }
-        }
-    }
-
-    // 3. Standard locations
-    for candidate in ["/opt/homebrew/bin/axe", "/usr/local/bin/axe"] {
-        let path = PathBuf::from(candidate);
-        if path.exists() {
-            return Some(path);
-        }
-    }
-
-    // 4. Search PATH
-    if let Ok(path_var) = std::env::var("PATH") {
-        for entry in std::env::split_paths(&path_var) {
-            let candidate = entry.join("axe");
-            if candidate.exists() {
-                return Some(candidate);
             }
         }
     }
