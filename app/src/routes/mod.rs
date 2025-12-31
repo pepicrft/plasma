@@ -5,11 +5,43 @@ mod xcode;
 use crate::server::AppState;
 use crate::simulator;
 use axum::{
+    response::Html,
     routing::{get, post},
     Router,
 };
 use std::sync::Arc;
 use tower_http::services::{ServeDir, ServeFile};
+
+/// Check if we're in development mode (Vite dev server running)
+fn is_dev_mode() -> bool {
+    // Check if VITE_DEV environment variable is set, or if we're in debug build
+    std::env::var("VITE_DEV").is_ok() || cfg!(debug_assertions)
+}
+
+/// Generate development HTML that loads from Vite dev server
+fn dev_index_html() -> Html<&'static str> {
+    Html(r#"<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="http://localhost:5173/plasma-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plasma</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import RefreshRuntime from 'http://localhost:5173/@react-refresh'
+      RefreshRuntime.injectIntoGlobalHook(window)
+      window.$RefreshReg$ = () => {}
+      window.$RefreshSig$ = () => (type) => type
+      window.__vite_plugin_react_preamble_installed__ = true
+    </script>
+    <script type="module" src="http://localhost:5173/@vite/client"></script>
+    <script type="module" src="http://localhost:5173/src/main.tsx"></script>
+  </body>
+</html>"#)
+}
 
 /// Create all routes for the application
 pub fn create_routes(frontend_dir: Option<&str>) -> Router<Arc<AppState>> {
@@ -32,8 +64,11 @@ pub fn create_routes(frontend_dir: Option<&str>) -> Router<Arc<AppState>> {
 
     let router = Router::new().nest("/api", api_routes);
 
-    // Serve frontend if directory is provided
-    if let Some(dir) = frontend_dir {
+    // In development, serve HTML that points to Vite dev server
+    if is_dev_mode() {
+        router.fallback(|| async { dev_index_html() })
+    } else if let Some(dir) = frontend_dir {
+        // In production, serve static files
         let serve_dir = ServeDir::new(dir).fallback(ServeFile::new(format!("{}/index.html", dir)));
         router.fallback_service(serve_dir)
     } else {

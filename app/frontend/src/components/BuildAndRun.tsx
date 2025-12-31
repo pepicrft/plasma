@@ -36,7 +36,7 @@ interface StreamLogEvent {
 }
 
 export function BuildAndRun() {
-  const [projectPath, setProjectPath] = useState("")
+  const [projectPath, setProjectPath] = useState("/Users/pepicrft/src/github.com/pepicrft/Plasma/app/tests/fixtures/xcode")
   const [simulators, setSimulators] = useState<Simulator[]>([])
   const [selectedSimulator, setSelectedSimulator] = useState("")
   const [schemes, setSchemes] = useState<Scheme[]>([])
@@ -46,26 +46,7 @@ export function BuildAndRun() {
   const [streamLogs, setStreamLogs] = useState<string[]>([])
   const [showLogs, setShowLogs] = useState(true)
 
-  // Fetch simulators on mount
-  useEffect(() => {
-    fetch("/api/simulator/list")
-      .then((res) => res.json())
-      .then((data) => {
-        setSimulators(data.simulators || [])
-        // Auto-select first booted simulator, or first available
-        const booted = data.simulators?.find(
-          (s: Simulator) => s.state === "Booted"
-        )
-        if (booted) {
-          setSelectedSimulator(booted.udid)
-        } else if (data.simulators?.length > 0) {
-          setSelectedSimulator(data.simulators[0].udid)
-        }
-      })
-      .catch((err) => console.error("Failed to fetch simulators:", err))
-  }, [])
-
-  // Discover schemes when project path changes
+  // Discover schemes for a given path
   const discoverSchemes = useCallback(async (path: string) => {
     if (!path) return
 
@@ -90,6 +71,28 @@ export function BuildAndRun() {
       console.error("Failed to discover schemes:", err)
     }
   }, [])
+
+  // Fetch simulators and discover schemes on mount
+  useEffect(() => {
+    fetch("/api/simulator/list")
+      .then((res) => res.json())
+      .then((data) => {
+        setSimulators(data.simulators || [])
+        // Auto-select first booted simulator, or first available
+        const booted = data.simulators?.find(
+          (s: Simulator) => s.state === "Booted"
+        )
+        if (booted) {
+          setSelectedSimulator(booted.udid)
+        } else if (data.simulators?.length > 0) {
+          setSelectedSimulator(data.simulators[0].udid)
+        }
+      })
+      .catch((err) => console.error("Failed to fetch simulators:", err))
+
+    // Discover schemes for default project path
+    discoverSchemes(projectPath)
+  }, [discoverSchemes, projectPath])
 
   // Subscribe to stream logs when streaming starts
   useEffect(() => {
