@@ -134,14 +134,33 @@ class HTTPServer {
 
         // Read HTTP request
         let bytesRead = Darwin.read(clientSocket, buffer, 4096)
+        var isOptionsRequest = false
         if bytesRead > 0 {
             let request = String(bytes: Data(bytes: buffer, count: bytesRead), encoding: .utf8) ?? ""
             let firstLine = request.components(separatedBy: "\r\n").first ?? ""
             Logger.debug("Client \(clientId) request: \(firstLine)")
+
+            // Check if this is a CORS preflight request
+            if firstLine.hasPrefix("OPTIONS ") {
+                isOptionsRequest = true
+            }
         }
 
-        // Send HTTP response header
-        let responseHeader = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace; boundary=--mjpegstream\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\n\r\n"
+        // CORS headers needed for cross-origin requests
+        let corsHeaders = "Access-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, OPTIONS\r\nAccess-Control-Allow-Headers: *\r\nAccess-Control-Max-Age: 86400\r\n"
+
+        // Handle CORS preflight request
+        if isOptionsRequest {
+            let optionsResponse = "HTTP/1.1 204 No Content\r\n\(corsHeaders)Content-Length: 0\r\n\r\n"
+            _ = optionsResponse.withCString { cstr in
+                Darwin.write(clientSocket, cstr, strlen(cstr))
+            }
+            Logger.debug("Client \(clientId): sent OPTIONS response")
+            return
+        }
+
+        // Send HTTP response header for MJPEG stream
+        let responseHeader = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace; boundary=--mjpegstream\r\nConnection: close\r\n\(corsHeaders)\r\n"
         _ = responseHeader.withCString { cstr in
             Darwin.write(clientSocket, cstr, strlen(cstr))
         }

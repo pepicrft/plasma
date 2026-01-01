@@ -450,8 +450,8 @@ export function BuildAndRun() {
 
         {/* Right side - Simulator Stream (full height) */}
          <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 overflow-hidden bg-black/20 rounded-xl">
-           {streamUrl ? (
-             <StreamViewer streamUrl={streamUrl} />
+           {streamUrl && buildState.status === "streaming" ? (
+             <StreamViewer streamUrl={streamUrl} udid={(buildState as { udid: string }).udid} />
            ) : (
              <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
                <div className="w-[200px] h-[400px] border-2 border-dashed border-border rounded-3xl flex items-center justify-center">

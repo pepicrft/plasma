@@ -60,7 +60,10 @@ pub fn create_routes(frontend_dir: Option<&str>) -> Router<Arc<AppState>> {
         .route("/simulator/list", get(simulator::list_simulators))
         .route("/simulator/launch", post(simulator::install_and_launch))
         .route("/simulator/stream", get(simulator::stream_simulator))
-        .route("/simulator/stream/logs", get(simulator::stream_logs));
+        .route("/simulator/stream/logs", get(simulator::stream_logs))
+        .route("/simulator/touch", post(simulator::send_touch))
+        .route("/simulator/tap", post(simulator::send_tap))
+        .route("/simulator/swipe", post(simulator::send_swipe));
 
     let router = Router::new().nest("/api", api_routes);
 
